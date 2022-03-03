@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'SOM_vis_app',
+    'SOM_vis_app.apps.SomVisAppConfig',
 ]
 
 MIDDLEWARE = [
