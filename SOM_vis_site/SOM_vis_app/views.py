@@ -63,10 +63,29 @@ def geo_dome_create(request):
 #     print(res)
 #     return render(request, "form.html")   
 
+#Wagner’s transformation of this projection use a bounding
+def wagnerTransform(boundParrallel,boundingMeridian,p,long,  theta):
+    k = sqrt(2*p*(math.sin(boundParrallel/2))/math.pi)
+    m = math.sin(boundParrallel)
+
+    x = (k/sqrt(m)) * ((long  * math.cos(theta))/(math.cos(theta/2)))
+    y = (2/sqrt(k*sqrt(m))) * math.sin(theta/2)
+
+    coOrd = [x,y]
+    return coOrd
+
+def inverseWagnerTransform(boundParrallel,boundingMeridian,p,y, x):
+    k = sqrt(2*p*(math.sin(boundParrallel/2))/math.pi)
+    m = math.sin(boundParrallel)
+
+    theta = 2 * math.asin( (y*k*sqrt(m)) / 2 )
+    long = (x*sqrt(m)*math.cos(theta/2) /(k*math.cos(theta))
+
+    return
 
 
 # p is the equator/central meridian ratio
-def wagnerLambertTransform(boundParrallel,boundingMeridian,p,long, lat):
+def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
     
     m = math.sin(boundParrallel)
     n = boundingMeridian/(math.pi)
@@ -85,12 +104,13 @@ def wagnerLambertTransform(boundParrallel,boundingMeridian,p,long, lat):
     y = y1*y2
 
     coOrd = [x,y] 
- 
     return coOrd
+
+    
 
 
 # is the inverse projection converting Cartesian coordinates to longitude and latitude
-def inerseWagnerLambertTransform(boundParrallel, boundingMeridian, x , y, p):
+def inverseLambertAzimuthalTransform(boundParrallel, boundingMeridian, x , y, p):
 
     m = math.sin(boundParrallel)
     n = boundingMeridian/(math.pi)
