@@ -79,7 +79,7 @@ def inverseWagnerTransform(boundParrallel,boundingMeridian,p,y, x):
     m = math.sin(boundParrallel)
 
     theta = 2 * math.asin( (y*k*sqrt(m)) / 2 )
-    long = (x*sqrt(m)*math.cos(theta/2) /(k*math.cos(theta))
+    long = (x*sqrt(m)*math.cos(theta/2)) /(k*math.cos(theta))
 
     return
 
