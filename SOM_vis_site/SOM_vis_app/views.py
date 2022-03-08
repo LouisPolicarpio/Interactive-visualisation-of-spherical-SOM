@@ -1,9 +1,10 @@
+from asyncio import events
 from cmath import sqrt
 from os import system
 from tkinter import Y
 from urllib import request
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView
 import math
 
@@ -11,17 +12,10 @@ from numpy import mat
 
 
 from SOM_vis_app.models import GeoDome , CoOrdDome
-# from .forms import somForm
 from geodome import GeodesicDome
-# Create your views here.
 
 
-# class somFormView(TemplateView):
-#     template_name = 'form.html'
 
-#     def get(self, request):
-#         form = somForm()
-#         return render(request, self.template_name, {'form':form})
 
 def geo_dome_create(request):
     if request.method == 'POST':
@@ -31,15 +25,9 @@ def geo_dome_create(request):
         domeOrds = GeodesicDome(freq).get_vertices()
         newName = post.get("name")
 
-        
         #create dome 
         dome = GeoDome(name= newName)
         dome.save()
-
-
-        # print(domeOrds)
-        # print(domeOrds[0])
-        # print(domeOrds[0][0])
 
         #store ords
         for i in range(len(domeOrds)):
@@ -47,25 +35,23 @@ def geo_dome_create(request):
                 newOrd = domeOrds[i][j]
                 newCoOrd = CoOrdDome( geoDome = dome,   value = newOrd,   coOrd = i, xyz = j)
                 newCoOrd.save()
-   
+        return redirect("disp")  
 
+    geoDome_list = GeoDome.objects.all()
+    return render(request, "form.html", )  
 
-          
-        #for each ord 
-        #assign pk to created dome 
-        #store ord 
-
-    return render(request, "form.html")    
-
-# def geo_dome_render(request):
-#     freq = int(request.POST.get("freq"))
-#     res = GeodesicDome(freq).get_vertices()
-#     print(res)
-#     return render(request, "form.html")   
+def geo_dome_disp(request):
+    geoDome_list = GeoDome.objects.all()
+    if request.method == 'POST':
+        post = request.POST
+        dome = post.get("geoDome_list")
+        Ord_list = CoOrdDome.objects.filter(geoDome = dome)
+        return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list})          
+    return render(request, "dispDome.html",{'geoDome_list' : geoDome_list})  
 
 #Wagner’s transformation of this projection use a bounding
 def wagnerTransform(boundParrallel,boundingMeridian,p,long,  theta):
-    k = sqrt(2*p*(math.sin(boundParrallel/2))/math.pi)
+    k = sqrt(2*p*math.sin(boundParrallel/2)/math.pi)
     m = math.sin(boundParrallel)
 
     x = (k/sqrt(m)) * ((long  * math.cos(theta))/(math.cos(theta/2)))
@@ -75,7 +61,7 @@ def wagnerTransform(boundParrallel,boundingMeridian,p,long,  theta):
     return coOrd
 
 def inverseWagnerTransform(boundParrallel,boundingMeridian,p,y, x):
-    k = sqrt(2*p*(math.sin(boundParrallel/2))/math.pi)
+    k = sqrt(2*p*math.sin(boundParrallel/2)/math.pi)
     m = math.sin(boundParrallel)
 
     theta = 2 * math.asin( (y*k*sqrt(m)) / 2 )

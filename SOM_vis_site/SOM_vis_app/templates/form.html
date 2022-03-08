@@ -1,13 +1,14 @@
 {%extends 'base.html'%}
 {%block content%} 
 
-<h1> hello world </h1>
+<h1> Create Dome </h1>
 
-<form action="." method = "POST" >
+<form method = "POST" >
     {% csrf_token %}
     <input type="number" name="freq" value="0" />
     <input type="text" name="name" placeholder="domeName"/>
     <input type="submit" value="submit"> 
 </form>
+
 
 {% endblock %}

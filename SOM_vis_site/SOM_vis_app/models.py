@@ -13,7 +13,7 @@ class CoOrdDome(models.Model):
     geoDome = models.ForeignKey(GeoDome, on_delete=models.CASCADE)
     value = models.FloatField(default=0)
     coOrd = models.IntegerField(default=0)
-    # x = 0, y=1, z=2
+    # x = 0, y=1, z =2
     xyz = models.IntegerField(default=0)
 
 

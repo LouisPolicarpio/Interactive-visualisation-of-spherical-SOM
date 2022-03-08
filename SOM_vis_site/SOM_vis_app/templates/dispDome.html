@@ -1,0 +1,30 @@
+{%extends 'base.html'%}
+{%block content%} 
+
+<div>
+    <h1> Geo Dome </h1>
+    <form method="POST">
+    {% csrf_token %}
+        <select name="geoDome_list">
+
+            {% for i in geoDome_list %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+            {% endfor %}
+            
+            {% if geoDome_list.count < 1%}
+                <option>none</option>
+            {% endif %}        
+        </select>
+        {%if geoDome_list.count > 0%}
+            <input type="submit" value="View Details" />
+        {%endif%}
+    </form>
+
+</div>
+
+<div>
+    {% for i in Ord_list %}
+        {{ i.value }}
+    {% endfor %}
+</div>
+{% endblock %}
