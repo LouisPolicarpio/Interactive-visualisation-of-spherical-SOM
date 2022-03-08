@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
-from SOM_vis_app.models import GeoDome , CoOrd
+from SOM_vis_app.models import GeoDome , CoOrdDome
 # from .forms import somForm
 from geodome import GeodesicDome
 # Create your views here.
@@ -30,25 +30,29 @@ def geo_dome_create(request):
         dome = GeoDome(name= newName)
         dome.save()
 
+
+        # print(domeOrds)
+        # print(domeOrds[0])
+        # print(domeOrds[0][0])
+
         #store ords
-        for triangle in domeOrds:
-            for ord in domeOrds[triangle]:
-                newOrd = CoOrd
+        for i in range(len(domeOrds)):
+            for j in range(len(domeOrds[i])):
+                newOrd = domeOrds[i][j]
+                newCoOrd = CoOrdDome( geoDome = dome,   coOrd = newOrd,   triangle = i)
+                newCoOrd.save()
+   
+
 
           
         #for each ord 
         #assign pk to created dome 
         #store ord 
 
-        
-
-
-        print(domeOrds[1][1])
-        return render(request, "form.html")
     return render(request, "form.html")    
 
-def geo_dome_render(request):
-    freq = int(request.POST.get("freq"))
-    res = GeodesicDome(freq).get_vertices()
-    print(res)
-    return render(request, "form.html")   
+# def geo_dome_render(request):
+#     freq = int(request.POST.get("freq"))
+#     res = GeodesicDome(freq).get_vertices()
+#     print(res)
+#     return render(request, "form.html")   

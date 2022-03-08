@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from SOM_vis_app.models import CoOrd, GeoDome
+from SOM_vis_app.models import CoOrdDome, GeoDome
 
 # Register your models here.
 admin.site.register(GeoDome)
-admin.site.register(CoOrd)
+admin.site.register(CoOrdDome)
