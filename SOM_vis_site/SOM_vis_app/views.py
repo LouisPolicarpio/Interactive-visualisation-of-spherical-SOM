@@ -2,16 +2,17 @@ from asyncio import events
 from cmath import sqrt
 from os import system
 from tkinter import Y
+from turtle import update
 from urllib import request
 from django.shortcuts import redirect, render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView
-import math
+import cmath
 
-from numpy import mat
+from numpy import angle, mat
 
 
-from SOM_vis_app.models import GeoDome , CoOrdDome
+from SOM_vis_app.models import GeoDome , CoOrdDome, CoOrd2D
 from geodome import GeodesicDome
 
 
@@ -30,15 +31,14 @@ def geo_dome_create(request):
         dome.save()
 
         #store ords
+        ordArr = []
         for i in range(len(domeOrds)):
-            for j in range(len(domeOrds[i])):
-                newOrd = domeOrds[i][j]
-                newCoOrd = CoOrdDome( geoDome = dome,   value = newOrd,   coOrd = i, xyz = j)
-                newCoOrd.save()
+            newCoOrd = CoOrdDome( geoDome = dome,  x = domeOrds[i][0], y = domeOrds[i][1], z = domeOrds[i][2] )
+            ordArr.append(newCoOrd)
+        CoOrdDome.objects.bulk_create(ordArr)    
         return redirect("disp")  
-
-    geoDome_list = GeoDome.objects.all()
-    return render(request, "form.html", )  
+        
+    return render(request, "form.html")  
 
 def geo_dome_disp(request):
     geoDome_list = GeoDome.objects.all()
@@ -46,26 +46,73 @@ def geo_dome_disp(request):
         post = request.POST
         dome = post.get("geoDome_list")
         Ord_list = CoOrdDome.objects.filter(geoDome = dome)
-        return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list})          
-    return render(request, "dispDome.html",{'geoDome_list' : geoDome_list})  
+        
+        if post.get('action') == 'ViewDetails':
+            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list})          
+        elif post['action'] == 'ConvertTo2D':
+            projList = create2dProj(Ord_list) 
+            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': projList})      
+            
+
+
+    return render(request, "dispDome.html",{'geoDome_list' : geoDome_list})
+
+
+def create2dProj(Ord_list):   
+    #create dome 
+    geoDomekey = Ord_list[0].geoDome
+
+    CoOrd2D.objects.filter(geoDome = geoDomekey).delete()            
+    projArr = []
+    for i in range(len(Ord_list)):
+
+            spherCodord = sphericalCordConvert(Ord_list[i].x, Ord_list[i].y, Ord_list[i].z) 
+            #bounding parallel = 61:9' and an equator/central meridian ratio p = 2:03 
+            coOrd = wagnerTransform(float(61.9),float(2.03),spherCodord[1], spherCodord[2])
+            proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1])
+
+            projArr.append(proj)
+    CoOrd2D.objects.bulk_create(projArr)    
+        
+
+    projList = CoOrd2D.objects.filter(geoDome = geoDomekey)
+    return projList  
+
+# 0 = radius, 1 = polarAngle = lon,  2 = azimuthAngle = lat  
+def sphericalCordConvert(x,y,z):
+    spherCodord = []
+
+    radius  =  sqrt((x**2) + (y**2) + (z**2))
+    polarAngle = cmath.acos(z/radius)
+    if( x != 0):
+        azimuthAngle  = cmath.atan(y/x) 
+    else:
+        azimuthAngle = 90
+    spherCodord.append(radius)
+    spherCodord.append(polarAngle)
+    spherCodord.append(azimuthAngle)
+
+    return spherCodord
 
 #Wagner’s transformation of this projection use a bounding
-def wagnerTransform(boundParrallel,boundingMeridian,p,long,  theta):
-    k = sqrt(2*p*math.sin(boundParrallel/2)/math.pi)
-    m = math.sin(boundParrallel)
+def wagnerTransform(boundParrallel,p,long, lat):
+    k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
+    m = cmath.sin(boundParrallel)
 
-    x = (k/sqrt(m)) * ((long  * math.cos(theta))/(math.cos(theta/2)))
-    y = (2/sqrt(k*sqrt(m))) * math.sin(theta/2)
+    theta = cmath.asin(m * cmath.sin(lat) )
 
-    coOrd = [x,y]
+    x = (k/sqrt(m)) * ((long  * cmath.cos(theta))/(cmath.cos(theta/2)))
+    y = (2/(k * sqrt(sqrt(m)))) * cmath.sin(theta/2)
+
+    coOrd = [round(x.real,5),round(y.real,5)]
     return coOrd
 
-def inverseWagnerTransform(boundParrallel,boundingMeridian,p,y, x):
-    k = sqrt(2*p*math.sin(boundParrallel/2)/math.pi)
-    m = math.sin(boundParrallel)
+def inverseWagnerTransform(boundParrallel,p,y, x):
+    k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
+    m = cmath.sin(boundParrallel)
 
-    theta = 2 * math.asin( (y*k*sqrt(m)) / 2 )
-    long = (x*sqrt(m)*math.cos(theta/2)) /(k*math.cos(theta))
+    theta = 2 * cmath.asin( (y*k*sqrt(m)) / 2 )
+    long = (x*sqrt(m)*cmath.cos(theta/2)) /(k*cmath.cos(theta))
 
     return
 
@@ -73,20 +120,20 @@ def inverseWagnerTransform(boundParrallel,boundingMeridian,p,y, x):
 # p is the equator/central meridian ratio
 def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
     
-    m = math.sin(boundParrallel)
-    n = boundingMeridian/(math.pi)
+    m = cmath.sin(boundParrallel)
+    n = boundingMeridian/(cmath.pi)
     #k is scalefactor
-    k = sqrt( (p * math.sin((boundParrallel/2)) ) / math.sin(boundingMeridian/2))
-    sinTheta = m * math.sin(lat)
-    theta = math.asin(sinTheta)
+    k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
+    sinTheta = m * cmath.sin(lat)
+    theta = cmath.asin(sinTheta)
 
     #transform method
     x1 = (k/(sqrt(m*n))) 
-    x2 = ( (sqrt(2)*math.cos(theta)*math.sin(n*long)) / (sqrt(1+math.cos(theta)*math.cos(n*long))) )
+    x2 = ( (sqrt(2)*cmath.cos(theta)*cmath.sin(n*long)) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) )
     x = x1 * x2
 
     y1 = (1/(k * sqrt(m*n))) 
-    y2 = (sqrt(2)*sinTheta) / (sqrt(1+math.cos(theta)*math.cos(n*long))) 
+    y2 = (sqrt(2)*sinTheta) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) 
     y = y1*y2
 
     coOrd = [x,y] 
@@ -98,17 +145,17 @@ def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
 # is the inverse projection converting Cartesian coordinates to longitude and latitude
 def inverseLambertAzimuthalTransform(boundParrallel, boundingMeridian, x , y, p):
 
-    m = math.sin(boundParrallel)
-    n = boundingMeridian/(math.pi)
+    m = cmath.sin(boundParrallel)
+    n = boundingMeridian/(cmath.pi)
     #k is scalefactor
-    k = sqrt( (p * math.sin((boundParrallel/2)) ) / math.sin(boundingMeridian/2))
+    k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
 
     X = x * (sqrt(m*n))/k
     Y = y * k * sqrt(m*n)
-    Z = sqrt(1 - (pow(X,2) + pow(Y,2))/4)
+    Z = sqrt(1 - ((X**2) + (Y**2))/4)
 
-    lat =  (1/n) * math.atan((Z*X)/(2*pow(Z,2)-1))
-    long = math.asin((Z*Y)/m)
+    lat =  (1/n) * cmath.atan((Z*X)/(2*(Z**2)-1))
+    long = cmath.asin((Z*Y)/m)
     
     longLat = [long,lat]
     return longLat

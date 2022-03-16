@@ -3,7 +3,7 @@
 
 <div>
     <h1> Geo Dome </h1>
-    <form method="POST">
+    <form method="POST"  >
     {% csrf_token %}
         <select name="geoDome_list">
 
@@ -13,18 +13,31 @@
             
             {% if geoDome_list.count < 1%}
                 <option>none</option>
-            {% endif %}        
+            {% endif %}   
+
         </select>
         {%if geoDome_list.count > 0%}
-            <input type="submit" value="View Details" />
+            <input type="submit" name="action" value="ViewDetails" />
+            <input type="submit" name="action" value="ConvertTo2D" />
         {%endif%}
     </form>
+
+    
 
 </div>
 
 <div>
     {% for i in Ord_list %}
-        {{ i.value }}
+ 
+        {{ i.x }}
+
+
+        {{ i.y }}
+
+
+        {{ i.z }}
+
+        <br>
     {% endfor %}
 </div>
 {% endblock %}
