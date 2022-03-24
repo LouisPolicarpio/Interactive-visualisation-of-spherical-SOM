@@ -1,7 +1,7 @@
 {%extends 'base.html'%}
 {%block content%} 
 
-<div>
+<div >
     <h1> Geo Dome </h1>
     <form method="POST"  >
     {% csrf_token %}
@@ -17,7 +17,7 @@
 
         </select>
         {%if geoDome_list.count > 0%}
-            <input type="submit" name="action" value="ViewDetails" />
+            <input type="submit" name="action" value="ViewDetails"  />
             <input type="submit" name="action" value="ConvertTo2D" />
         {%endif%}
     </form>
@@ -26,18 +26,57 @@
 
 </div>
 
-<div>
+
+
+
+<div id = dome_display>
+ 
+
+    <script>
+        
+        var width = 700 ;
+        var height = 700 ;
+
+        var svg = d3.select("#dome_display").append("svg")
+            .attr("viewBox", "-350 -350 700 700")
+            .attr("width", width)
+            .attr("height", height)
+       
+
+;
+
+        function proj(x, y, z) {
+            if (z != null) {
+                svg.append("circle")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("cz", z)
+                    .attr("r", 3);
+            } else {
+                svg.append("ellipse")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("r", 3)
+            }
+        }
+    </script>
+
+    <br>
     {% for i in Ord_list %}
  
-        {{ i.x }}
+    <script> 
+        var x = parseFloat("{{i.x}}") * 100;
+        var y = parseFloat("{{i.y}}") * 100;
+        var z = parseFloat("{{i.z}}") * 100;
+        proj(x, y, z);
+    </script>
 
-
-        {{ i.y }}
-
-
-        {{ i.z }}
-
-        <br>
     {% endfor %}
+
+
+    
 </div>
+
+
+
 {% endblock %}

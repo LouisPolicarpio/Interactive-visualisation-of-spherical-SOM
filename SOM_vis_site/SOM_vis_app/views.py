@@ -1,6 +1,9 @@
 from asyncio import events
 from cmath import sqrt
+from math import degrees
+import math
 from os import system
+from re import M
 from tkinter import Y
 from turtle import update
 from urllib import request
@@ -67,8 +70,9 @@ def create2dProj(Ord_list):
     for i in range(len(Ord_list)):
 
             spherCodord = sphericalCordConvert(Ord_list[i].x, Ord_list[i].y, Ord_list[i].z) 
-            #bounding parallel = 61:9' and an equator/central meridian ratio p = 2:03 
-            coOrd = wagnerTransform(float(61.9),float(2.03),spherCodord[1], spherCodord[2])
+            #bounding parallel = 61.9 and an equator/central meridian ratio p = 2:03 
+            #need to convert 61.9 = 1.080359 to radian 
+            coOrd = wagnerTransform(1.080359,2.03,spherCodord[2], spherCodord[1])
             proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1])
 
             projArr.append(proj)
@@ -78,43 +82,98 @@ def create2dProj(Ord_list):
     projList = CoOrd2D.objects.filter(geoDome = geoDomekey)
     return projList  
 
-# 0 = radius, 1 = polarAngle = lon,  2 = azimuthAngle = lat  
+
+
+# 0 = radius, 1 = azimuthAngle = lon,  2 = polarAngle = lat  all agles in radian 
+# reverse to get cartisian
 def sphericalCordConvert(x,y,z):
     spherCodord = []
 
-    radius  =  sqrt((x**2) + (y**2) + (z**2))
+    radius  =  sqrt((x*x) + (y*y) + (z*z))
+    
+    #0 to pi 
     polarAngle = cmath.acos(z/radius)
-    if( x != 0):
-        azimuthAngle  = cmath.atan(y/x) 
-    else:
-        azimuthAngle = 90
-    spherCodord.append(radius)
-    spherCodord.append(polarAngle)
-    spherCodord.append(azimuthAngle)
+    
+    #find the quadrant 
+    # -pi to pi / 0 to 2pi(180)
+    #check range 
+    # if x is neg  (pi + atan) or (-pi + atan) depending on y  
+ 
+    azimuthAngle = math.atan2(y,x)
 
+    # if( x != 0):
+    #     azimuthAngle  = cmath.atan(y/x) 
+    # elif(y > 0):
+    #     azimuthAngle = 1.5708
+    # else:
+    #     azimuthAngle = -1.5708
+
+    # print("-----------------------")
+    # print(y)
+    # print(x)
+    # print(azimuthAngle)
+
+
+
+    spherCodord.append(radius)
+    spherCodord.append(azimuthAngle)
+    spherCodord.append(polarAngle)
+    
+    
+    # print("_____________")
+    # print(x)
+    # print(y)
+    # print(z)
+    # print("-------")
+    # cartisanCordConvert(radius,azimuthAngle,polarAngle)
+    # print("_____________")
     return spherCodord
 
+#    
+def cartisanCordConvert(radius,azimuthAngle,polarAngle):
+    x = radius * cmath.sin(polarAngle) * cmath.cos(azimuthAngle)
+    y = radius * cmath.sin(polarAngle) * cmath.sin(azimuthAngle)
+    z = radius * cmath.cos(polarAngle)
+    
+    print(x)
+    print(y)
+    print(z)
+    return
+    # cartisan = [x,y,z]
+    # return cartisan
+
 #Wagner’s transformation of this projection use a bounding
+# check for range of angles 
+# readuce to tesselation 
+# reduce to cube
+# visulisation
 def wagnerTransform(boundParrallel,p,long, lat):
     k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
-    m = cmath.sin(boundParrallel)
+    m = math.sin(boundParrallel)
 
-    theta = cmath.asin(m * cmath.sin(lat) )
-
+    theta = cmath.asin(m * cmath.sin(lat) ) 
+    # print("---------------------------")
+    # print(m)
+    # print(lat)
+    # print(long)
+    # print(theta)
+    #look for range of th
     x = (k/sqrt(m)) * ((long  * cmath.cos(theta))/(cmath.cos(theta/2)))
-    y = (2/(k * sqrt(sqrt(m)))) * cmath.sin(theta/2)
+    y = (2/(k * sqrt(m))) * cmath.sin(theta/2)
 
     coOrd = [round(x.real,5),round(y.real,5)]
     return coOrd
 
-def inverseWagnerTransform(boundParrallel,p,y, x):
-    k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
-    m = cmath.sin(boundParrallel)
 
-    theta = 2 * cmath.asin( (y*k*sqrt(m)) / 2 )
-    long = (x*sqrt(m)*cmath.cos(theta/2)) /(k*cmath.cos(theta))
+#this is for the grid dont think will be needed 
+# def inverseWagnerTransform(boundParrallel,p,y, x):
+#     k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
+#     m = cmath.sin(boundParrallel)
 
-    return
+#     theta = 2 * cmath.asin( (y*k*sqrt(m)) / 2 )
+#     long = (x*sqrt(m)*cmath.cos(theta/2)) /(k*cmath.cos(theta))
+
+#     return
 
 
 # p is the equator/central meridian ratio
@@ -143,19 +202,19 @@ def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
 
 
 # is the inverse projection converting Cartesian coordinates to longitude and latitude
-def inverseLambertAzimuthalTransform(boundParrallel, boundingMeridian, x , y, p):
+# def inverseLambertAzimuthalTransform(boundParrallel, boundingMeridian, x , y, p):
 
-    m = cmath.sin(boundParrallel)
-    n = boundingMeridian/(cmath.pi)
-    #k is scalefactor
-    k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
+#     m = cmath.sin(boundParrallel)
+#     n = boundingMeridian/(cmath.pi)
+#     #k is scalefactor
+#     k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
 
-    X = x * (sqrt(m*n))/k
-    Y = y * k * sqrt(m*n)
-    Z = sqrt(1 - ((X**2) + (Y**2))/4)
+#     X = x * (sqrt(m*n))/k
+#     Y = y * k * sqrt(m*n)
+#     Z = sqrt(1 - ((X**2) + (Y**2))/4)
 
-    lat =  (1/n) * cmath.atan((Z*X)/(2*(Z**2)-1))
-    long = cmath.asin((Z*Y)/m)
+#     lat =  (1/n) * cmath.atan((Z*X)/(2*(Z**2)-1))
+#     long = cmath.asin((Z*Y)/m)
     
-    longLat = [long,lat]
-    return longLat
+#     longLat = [long,lat]
+#     return longLat
