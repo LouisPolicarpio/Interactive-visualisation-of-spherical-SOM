@@ -51,10 +51,11 @@ def geo_dome_disp(request):
         Ord_list = CoOrdDome.objects.filter(geoDome = dome)
         
         if post.get('action') == 'ViewDetails':
-            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list})          
-        elif post['action'] == 'ConvertTo2D':
             projList = create2dProj(Ord_list) 
-            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': projList})      
+            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list, 'Proj_list': projList})          
+  
+   
+               
             
 
 
@@ -73,6 +74,8 @@ def create2dProj(Ord_list):
             #bounding parallel = 61.9 and an equator/central meridian ratio p = 2:03 
             #need to convert 61.9 = 1.080359 to radian 
             coOrd = wagnerTransform(1.080359,2.03,spherCodord[1], spherCodord[2])
+            # coOrd = lambertAzimuthalTransform( math.pi, math.pi/2, math.sqrt(2),spherCodord[1],spherCodord[2])
+
             proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1])
 
             projArr.append(proj)
@@ -86,6 +89,7 @@ def create2dProj(Ord_list):
 
 # 0 = radius, 1 = azimuthAngle = lng,  2 = polarAngle = lat  all agles in radian 
 # reverse to get cartisian
+# https://stackoverflow.com/questions/5674149/3d-coordinates-on-a-sphere-to-latitude-and-longitude
 def sphericalCordConvert(x,y,z):
     spherCodord = []
 
@@ -128,14 +132,10 @@ def wagnerTransform(boundParrallel,p,long, lat):
 
     #The result is between -pi/2 and pi/2.
     theta = math.asin(m * math.sin(lat) ).real 
-    # print(theta)
+
 
     x = ((k/sqrt(m)) * (   (long  * math.cos(theta))/(math.cos(theta/2))  )   ).real  #
-    # print((long  * math.cos(theta)))
-    # print((math.cos(theta/2)))
-    
-   # print(x)
-    print("-------------------")
+
     y = (2/(k * sqrt(m))) * math.sin(theta/2)
 
     coOrd = [round(x.real,5),round(y.real,5)]
@@ -153,26 +153,26 @@ def wagnerTransform(boundParrallel,p,long, lat):
 
 
 # p is the equator/central meridian ratio
-# def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
+def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
     
-#     m = cmath.sin(boundParrallel)
-#     n = boundingMeridian/(cmath.pi)
-#     #k is scalefactor
-#     k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
-#     sinTheta = m * cmath.sin(lat)
-#     theta = cmath.asin(sinTheta)
+    m = cmath.sin(boundParrallel)
+    n = boundingMeridian/(cmath.pi)
+    #k is scalefactor
+    k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
+    sinTheta = m * cmath.sin(lat)
+    theta = cmath.asin(sinTheta)
 
-#     #transform method
-#     x1 = (k/(sqrt(m*n))) 
-#     x2 = ( (sqrt(2)*cmath.cos(theta)*cmath.sin(n*long)) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) )
-#     x = x1 * x2
+    #transform method
+    x1 = (k/(sqrt(m*n))) 
+    x2 = ( (sqrt(2)*cmath.cos(theta)*cmath.sin(n*long)) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) )
+    x = x1 * x2
 
-#     y1 = (1/(k * sqrt(m*n))) 
-#     y2 = (sqrt(2)*sinTheta) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) 
-#     y = y1*y2
+    y1 = (1/(k * sqrt(m*n))) 
+    y2 = (sqrt(2)*sinTheta) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) 
+    y = y1*y2
 
-#     coOrd = [x,y] 
-#     return coOrd
+    coOrd = [x.real,y.real] 
+    return coOrd
 
     
 

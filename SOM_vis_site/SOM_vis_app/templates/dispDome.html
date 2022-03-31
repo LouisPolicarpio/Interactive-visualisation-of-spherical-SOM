@@ -1,6 +1,8 @@
 {%extends 'base.html'%}
 {%block content%} 
 
+
+
 <div >
     <h1> Geo Dome </h1>
     <form method="POST"  >
@@ -18,7 +20,7 @@
         </select>
         {%if geoDome_list.count > 0%}
             <input type="submit" name="action" value="ViewDetails"  />
-            <input type="submit" name="action" value="ConvertTo2D" />
+            <!-- <input type="submit" name="action" value="ConvertTo2D" /> -->
         {%endif%}
     </form>
 
@@ -33,19 +35,21 @@
  
 
     <script>
-        
+        //create svg
         var width = 700 ;
         var height = 700 ;
-
-        var svg = d3.select("#dome_display").append("svg")
+        var dome_svg = d3.select("#dome_display").append("svg")
             .attr("viewBox", "-350 -350 700 700")
             .attr("width", width)
-            .attr("height", height)
-       
+            .attr("height", height);
 
-;
+        var proj_svg = d3.select("#dome_display").append("svg")
+                .attr("viewBox", "-350 -350 700 700")
+                .attr("width", width)
+                .attr("height", height);    
 
-        function proj(x, y, z) {
+        // projection function
+        function proj(x, y, z, svg) {
             if (z != null) {
                 svg.append("circle")
                     .attr("cx", x)
@@ -59,28 +63,89 @@
                     .attr("r", 3)
             }
         }
-    </script>
+            const dome_vertices = [];
 
-    <br>
-    {% for i in Ord_list %}
- 
-    <script> 
-        var x = parseFloat("{{i.x}}") * 100;
-        var y = parseFloat("{{i.y}}") * 100;
-        var z = parseFloat("{{i.z}}") * 100;
-        proj(x, y, z);
     </script>
-
-    {{i.x}}
-    {{i.y}}
-    {{i.z}}
-    <br>
-    {% endfor %}
 
 
     
+<div>
+    {% for i in Ord_list %}
+    
+    <script> 
+        var x = parseFloat("{{i.x}}" * 100);
+        var y = parseFloat("{{i.y}}" * 100);
+        if("{{i.z}}" === NaN){
+            var z = 0;
+        }else{
+            var z = parseFloat("{{i.z}}" * 100);
+        }
+        proj(x, y, z, dome_svg);
+        dome_vertices.push(x, y, z);
+    </script>
+
+    {% endfor %}
+
 </div>
 
+<div>
+    {% for i in Proj_list %}
 
+    <script>
+        var x = parseFloat("{{i.x}}" * 100);
+        var y = parseFloat("{{i.y}}" * 100);
+        proj(x, y, z, proj_svg);
+    </script>
+
+    {% endfor %}
+
+</div>
+    
+</div>
+
+    <!-- {% load static %}
+    <script src='{% static "geodome.js" %}'></script> -->
+
+<script>
+    // scene
+        const scene = new THREE.Scene();
+
+        //camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.6, 1200);
+        camera.position.z = 900;
+
+        //renders
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setClearColor("#233143");
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Make Canvas 
+
+       window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        })
+
+
+        // add points to scene
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(dome_vertices, 3));
+        const material = new THREE.PointsMaterial({ color: 0x888888, size:10 });
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+
+        
+        const rendering = function () {
+            requestAnimationFrame(rendering);
+            points.rotation.z -= 0.005;
+            points.rotation.x -= 0.01; 
+            renderer.render(scene, camera);
+        }
+        rendering();
+</script>
 
 {% endblock %}
+
