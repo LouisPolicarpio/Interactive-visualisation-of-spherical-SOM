@@ -1,8 +1,6 @@
 {%extends 'base.html'%}
 {%block content%} 
 
-
-
 <div >
     <h1> Geo Dome </h1>
     <form method="POST"  >
@@ -20,21 +18,17 @@
         </select>
         {%if geoDome_list.count > 0%}
             <input type="submit" name="action" value="ViewDetails"  />
-            <!-- <input type="submit" name="action" value="ConvertTo2D" /> -->
         {%endif%}
     </form>
-
-    
-
+ 
 </div>
 
 
+    <p id="test"> test </p>
 
 
 <div id = dome_display>
- 
-
-    <script>
+     <script>
         //create svg
         var width = 700 ;
         var height = 700 ;
@@ -57,13 +51,111 @@
                     .attr("cz", z)
                     .attr("r", 3);
             } else {
-                svg.append("ellipse")
+                svg.append("circle")
                     .attr("cx", x)
                     .attr("cy", y)
                     .attr("r", 3)
             }
         }
-            const dome_vertices = [];
+        const dome_vertices = [];
+
+        var startX = null;
+        var startY = null;
+
+        function rotationMatrix(theta, coord, pVect){
+
+            
+            
+            var x = math.subset(pVect, math.index(0));
+            var y = math.subset(pVect, math.index(1));
+            var z = math.subset(pVect, math.index(2));
+            console.log("---------------------------------------------------------");
+
+            console.log("t: "+theta);
+            console.log("v: " +pVect);
+            console.log("c: "+ coord);
+
+
+            
+            var r = math.matrix([
+                [
+                    Math.cos(theta) + Math.pow(x, 2) * (1 - Math.cos(theta)),
+                    x * y * (1 - Math.cos(theta)) - z * Math.sin(theta),
+                    x * z * (1 - Math.cos(theta)) + y * Math.sin(theta)
+
+                ],[
+                    y * x * (1 - Math.cos(theta)) + z * Math.sin(theta),
+                    Math.cos(theta) + Math.pow(y, 2) * (1 - Math.cos(theta)),
+                    y * z * (1 - Math.cos(theta)) - x * Math.sin(theta)
+
+
+                ],[
+                    z * x * (1 - Math.cos(theta) - y * Math.sin(theta)),
+                    z * y * (1 - Math.cos(theta) + x * Math.sin(theta)),
+                    Math.cos(theta) + Math.pow(z, 2) * (1 - Math.cos(theta))
+                ]
+            ]);
+
+           console.log("r " + r);
+           return math.multiply(r, coord);
+        
+        }
+        
+        document.getElementById("dome_display").onmousedown = function (e) {
+            startX = e.clientX;
+            startY = e.clientY;
+        };
+
+        document.getElementById("dome_display").onmousemove = function (e) {
+            if (startX == null) {
+                return;
+            }
+            if (startY == null) {
+                return;
+            }
+
+            //distance vextor
+            var dx = e.clientX - startX ;
+            var dy = e.clientY - startY;
+            var vector = math.matrix([dx,dy,0]);
+
+            //magnitude
+            var dist = parseFloat(Math.sqrt(Math.pow(dy, 2) + Math.pow(dx, 2)));
+  
+            //angle 
+            var axis  = math.matrix([0,0,-1]);
+            var pVect = (math.cross(axis, vector));
+            var unitV = math.divide(pVect, dist);
+  
+
+            //var alpah = dist;
+            var theta = Math.min(Math.max(parseFloat(   dist  ), 0), 2 * Math.PI);
+            
+
+            dome_svg.selectAll("circle").datum(function () {
+                var tests = math.matrix([[this.getAttribute('cx')] , [this.getAttribute('cy')], [this.getAttribute('cz')]]);
+                
+                var newCoords = rotationMatrix(theta, tests, unitV);              
+
+                var x = math.subset(newCoords, math.index(0,0));
+                var y = math.subset(newCoords, math.index(1,0));
+                var z = math.subset(newCoords, math.index(2,0));              
+               
+                this.setAttribute('cx', x);
+                this.setAttribute('cy', y);
+                this.setAttribute('cz', x);
+             
+            });
+            startY = e.clientY;
+            startX = e.clientX;
+        };
+
+         document.getElementById("dome_display").onmouseup = function (e) {
+
+            startX = null;
+            startY = null;
+        };
+
 
     </script>
 
@@ -102,50 +194,5 @@
 </div>
     
 </div>
-
-    <!-- {% load static %}
-    <script src='{% static "geodome.js" %}'></script> -->
-
-<script>
-    // scene
-        const scene = new THREE.Scene();
-
-        //camera
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.6, 1200);
-        camera.position.z = 900;
-
-        //renders
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setClearColor("#233143");
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Make Canvas 
-
-       window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        })
-
-
-        // add points to scene
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(dome_vertices, 3));
-        const material = new THREE.PointsMaterial({ color: 0x888888, size:10 });
-        const points = new THREE.Points(geometry, material);
-        scene.add(points);
-
-
-        
-        const rendering = function () {
-            requestAnimationFrame(rendering);
-            points.rotation.z -= 0.005;
-            points.rotation.x -= 0.01; 
-            renderer.render(scene, camera);
-        }
-        rendering();
-</script>
-
 {% endblock %}
 
