@@ -52,13 +52,8 @@ def geo_dome_disp(request):
         
         if post.get('action') == 'ViewDetails':
             projList = create2dProj(Ord_list) 
-            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list, 'Proj_list': projList})          
-  
-   
+            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list, 'Proj_list': projList})  
                
-            
-
-
     return render(request, "dispDome.html",{'geoDome_list' : geoDome_list})
 
 
@@ -74,7 +69,6 @@ def create2dProj(Ord_list):
             #bounding parallel = 61.9 and an equator/central meridian ratio p = 2:03 
             #need to convert 61.9 = 1.080359 to radian 
             coOrd = wagnerTransform(1.080359,2.03,spherCodord[1], spherCodord[2])
-            # coOrd = lambertAzimuthalTransform( math.pi, math.pi/2, math.sqrt(2),spherCodord[1],spherCodord[2])
 
             proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1])
 
@@ -94,9 +88,7 @@ def sphericalCordConvert(x,y,z):
     spherCodord = []
 
     radius  =  sqrt((x*x) + (y*y) + (z*z))
-    
     lng = math.atan2(y,x)
-
     lat = math.atan2(z,sqrt(x*x+y*y).real)
     
 
@@ -104,27 +96,10 @@ def sphericalCordConvert(x,y,z):
     spherCodord.append(lng)
     spherCodord.append(lat)
     
-    
     return spherCodord
 
-#    
-def cartisanCordConvert(radius,azimuthAngle,polarAngle):
-    x = radius * math.sin(polarAngle) * math.cos(azimuthAngle)
-    y = radius * math.sin(polarAngle) * math.sin(azimuthAngle)
-    z = radius * math.cos(polarAngle)
-    
-    print(x)
-    print(y)
-    print(z)
-    return
-    # cartisan = [x,y,z]
-    # return cartisan
 
 #Wagner’s transformation of this projection use a bounding
-# check for range of angles 
-# readuce to tesselation 
-# reduce to cube
-# visulisation
 def wagnerTransform(boundParrallel,p,long, lat):
     k = sqrt(2*p*math.sin(boundParrallel/2)/math.pi).real
     m = math.sin(boundParrallel)
@@ -142,55 +117,3 @@ def wagnerTransform(boundParrallel,p,long, lat):
     return coOrd
 
 
-# def inverseWagnerTransform(boundParrallel,p,y, x):
-#     k = sqrt(2*p*cmath.sin(boundParrallel/2)/cmath.pi)
-#     m = cmath.sin(boundParrallel)
-
-#     theta = 2 * cmath.asin( (y*k*sqrt(m)) / 2 )
-#     long = (x*sqrt(m)*cmath.cos(theta/2)) /(k*cmath.cos(theta))
-
-#     return
-
-
-# p is the equator/central meridian ratio
-def lambertAzimuthalTransform(boundParrallel,boundingMeridian,p,long, lat):
-    
-    m = cmath.sin(boundParrallel)
-    n = boundingMeridian/(cmath.pi)
-    #k is scalefactor
-    k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
-    sinTheta = m * cmath.sin(lat)
-    theta = cmath.asin(sinTheta)
-
-    #transform method
-    x1 = (k/(sqrt(m*n))) 
-    x2 = ( (sqrt(2)*cmath.cos(theta)*cmath.sin(n*long)) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) )
-    x = x1 * x2
-
-    y1 = (1/(k * sqrt(m*n))) 
-    y2 = (sqrt(2)*sinTheta) / (sqrt(1+cmath.cos(theta)*cmath.cos(n*long))) 
-    y = y1*y2
-
-    coOrd = [x.real,y.real] 
-    return coOrd
-
-    
-
-
-# is the inverse projection converting Cartesian coordinates to longitude and latitude
-# def inverseLambertAzimuthalTransform(boundParrallel, boundingMeridian, x , y, p):
-
-#     m = cmath.sin(boundParrallel)
-#     n = boundingMeridian/(cmath.pi)
-#     #k is scalefactor
-#     k = sqrt( (p * cmath.sin((boundParrallel/2)) ) / cmath.sin(boundingMeridian/2))
-
-#     X = x * (sqrt(m*n))/k
-#     Y = y * k * sqrt(m*n)
-#     Z = sqrt(1 - ((X**2) + (Y**2))/4)
-
-#     lat =  (1/n) * cmath.atan((Z*X)/(2*(Z**2)-1))
-#     long = cmath.asin((Z*Y)/m)
-    
-#     longLat = [long,lat]
-#     return longLat

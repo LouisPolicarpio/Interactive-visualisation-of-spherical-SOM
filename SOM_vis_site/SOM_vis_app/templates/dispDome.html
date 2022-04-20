@@ -29,6 +29,49 @@
 
 <div id = dome_display>
      <script>
+
+    
+    // 0 = radius, 1 = azimuthAngle = lng,  2 = polarAngle = lat  all agles in radian 
+    //https://stackoverflow.com/questions/5674149/3d-coordinates-on-a-sphere-to-latitude-and-longitude
+    function sphericalCordConvert(x,y,z){
+        var spherCodord = [];
+
+        radius  =  Math.sqrt((x*x) + (y*y) + (z*z));
+        
+        lng = Math.atan2(y,x);
+        
+        lat = Math.atan2(z,Math.sqrt(x*x+y*y));
+        
+
+        spherCodord.push(radius);
+        spherCodord.push(lng);
+        spherCodord.push(lat);
+        
+        return spherCodord
+    }
+
+    
+
+    //Wagner’s transformation of this projection use a bounding
+    function wagnerTransform(boundParrallel,p,long, lat){
+        let k = Math.sqrt(2*p* Math.sin(boundParrallel/2)/math.pi);
+        let m = Math.sin(boundParrallel);
+
+        //The result is between -pi/2 and pi/2.
+        let theta = Math.asin(m * Math.sin(lat));
+        let wagnerX = ((k/Math.sqrt(m)) * (   (long  * Math.cos(theta))/(Math.cos(theta/2))  )   );
+
+        let wagnerY = (2/(k * Math.sqrt(m))) * Math.sin(theta/2);
+
+        var wagnerCoOrd = [wagnerX, wagnerY];
+;
+        return wagnerCoOrd;
+    }
+    
+
+
+
+
         //create svg
         var width = 700 ;
         var height = 700 ;
@@ -50,6 +93,7 @@
                     .attr("cy", y)
                     .attr("cz", z)
                     .attr("r", 3);
+                    
             } else {
                 svg.append("circle")
                     .attr("cx", x)
@@ -74,17 +118,7 @@
             x = math.subset(pVect, math.index(0)) / sum ;
             y = math.subset(pVect, math.index(1)) / sum;
             z = math.subset(pVect, math.index(2)) / sum;
-/*
-            console.log("---------------------------------------------------------");
-            console.log("t: "+theta);
-            console.log("v: " +pVect);
-            console.log("c: "+ coord);
-            
-            console.log("x: " + x );
-             console.log("y: " + y);
-              console.log("z: " + z);
-        
-*/
+
 
             //https://stackoverflow.com/questions/6721544/circular-rotation-around-an-arbitrary-axis
             var r = math.matrix([
@@ -106,9 +140,7 @@
                 ]
             ]);
 
-           console.log("r " + r);
            var res =  math.multiply(r, coord);
-           console.log("res : " + res);
            return res;
         }
         
@@ -134,11 +166,10 @@
             //distance vextor
           var dx = e.clientX - startX ;
           var dy = e.clientY - startY;
-//            var dx = 0;
-//            var dy = 1;            
+  
 
             var vector = math.matrix([dx,dy,0]);
-//            var vector = math.matrix([1, 0, 0]);
+
 
             //vector len
             var dist = parseFloat(Math.sqrt(Math.pow(dy, 2) + Math.pow(dx, 2)));
@@ -148,16 +179,12 @@
             var posVect = (math.cross(vector,axis));
             var unitV = math.divide(posVect, dist);
            
-
-            //var newOrd = alpah * dist;
-            //divide by rad
             
             //between 0 and 2pi
-            var theta = Math.min(Math.max(parseFloat(   dist/200  ), 0), 2 * Math.PI);
-            //var theta = Math.PI/10;
+            var theta = Math.min(Math.max(parseFloat(   dist/300  ), 0), 2 * Math.PI);
 
-            console.log("d" +  dist);
-            //update all circles  
+            var newProj = [];
+            //update all circles  in sphere 
             dome_svg.selectAll("circle").datum(function () {
                 var currentCord = math.matrix([[this.getAttribute('cx')] , [this.getAttribute('cy')], [this.getAttribute('cz')]]);
                                
@@ -166,26 +193,39 @@
                 var x = math.subset(newCoords, math.index(0,0));
                 var y = math.subset(newCoords, math.index(1,0));
                 var z = math.subset(newCoords, math.index(2,0));        
-                
-
-/*
-                console.log("=======================");
-                console.log("before " + currentCord);
-                console.log("after " + newCoords);
-   */             
-                
+            
                 var tmp2 = this.getAttribute('cx') ** 2 + this.getAttribute('cy') ** 2 + this.getAttribute('cz') ** 2;
-               // console.log("sum before " + tmp2);
                 var temp =  x ** 2 + y ** 2 + z ** 2;
-              //  console.log("sum after " + temp );
-               // console.log("=======================");
-                
-                
+
                 this.setAttribute('cx', x);
                 this.setAttribute('cy', y);
                 this.setAttribute('cz', z);
-             
+                
+                var spherCodord = sphericalCordConvert(x, y, z);
+                // bounding parallel = 61.9 and an equator (convert 61.9 = 1.080359 to radian) / central meridian ratio p = 2.03  
+                var newProjCoOrd = wagnerTransform(1.080359, 2.03, spherCodord[1], spherCodord[2]);
+                
+                newProj.push(newProjCoOrd);
+            
             });
+            
+            //update all circles in proj
+            var i = 0;
+            proj_svg.selectAll("circle").datum(function () {
+                
+                var newCoords = newProj[i];
+               
+                var x = newProj[i][0];
+                var y = newProj[i][1];
+
+
+                this.setAttribute('cx', x * 100);
+                this.setAttribute('cy', y * 100) ;
+
+                i ++;
+            });
+            
+            // projList = create2dProj(Ord_list) 
             startY = e.clientY;
             startX = e.clientX;
         };
@@ -193,8 +233,6 @@
         var sumX = 0;
         var sumY = 0;
         var sumZ = 0;
-
-
 
     </script>
 
@@ -205,16 +243,12 @@
     {% for i in Ord_list %}
     
     <script> 
-
-        
+  
         var x = parseFloat("{{i.x}}" * 100);
         var y = parseFloat("{{i.y}}" * 100);
         var z = parseFloat("{{i.z}}" * 100);
 
-        sumX += x;
-        sumY += y;
-        sumZ += z; 
-       
+     
         proj(x, y, z, dome_svg);
         dome_vertices.push(x, y, z);
 
@@ -223,11 +257,7 @@
 
     {% endfor %}
 
-    <script>
-        console.log("x" + sumX);
-        console.log("y" + sumY);
-        console.log("z" + sumZ);
-    </script>
+
 
 </div>
 
