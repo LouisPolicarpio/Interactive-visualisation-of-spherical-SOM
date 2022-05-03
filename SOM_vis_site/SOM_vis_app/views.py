@@ -1,21 +1,25 @@
 from asyncio import events
+from calendar import c
 from cmath import sqrt
 from math import degrees
 import math
 from os import system
+import random
 from re import M
 from tkinter import Y
-from turtle import update
+from turtle import color, update
 from urllib import request
 from django.shortcuts import redirect, render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView
 import cmath
+import numpy as np
+
 
 from numpy import angle, mat
 
 
-from SOM_vis_app.models import GeoDome , CoOrdDome, CoOrd2D
+from SOM_vis_app.models import GeoDome , CoOrdDome, CoOrd2D , Triangle
 from geodome import GeodesicDome
 
 
@@ -26,7 +30,9 @@ def geo_dome_create(request):
         post = request.POST
 
         freq = int(post.get("freq"))
-        domeOrds = GeodesicDome(freq).get_vertices()
+        dome = GeodesicDome(freq)
+        domeOrds = dome.get_vertices()
+        domeTri = dome.get_triangles()
         newName = post.get("name")
 
         #create dome 
@@ -35,10 +41,19 @@ def geo_dome_create(request):
 
         #store ords
         ordArr = []
+        triArr = []
+
         for i in range(len(domeOrds)):
-            newCoOrd = CoOrdDome( geoDome = dome,  x = domeOrds[i][0], y = domeOrds[i][1], z = domeOrds[i][2] )
-            ordArr.append(newCoOrd)
+            col = "#" + str(random.randint(0, 0xFFFFFF))
+            newCoOrd = CoOrdDome( geoDome = dome,  x = domeOrds[i][0], y = domeOrds[i][1], z = domeOrds[i][2], colour = col)
+            ordArr.append(newCoOrd)        
         CoOrdDome.objects.bulk_create(ordArr)    
+        
+        for i in range(len(domeTri)):
+            newTri = Triangle(geoDome = dome, point1 = domeTri[i][0], point2 = domeTri[i][1], point3 = domeTri[i][2])
+            triArr.append(newTri)
+        Triangle.objects.bulk_create(triArr)
+
         return redirect("disp")  
         
     return render(request, "form.html")  
@@ -49,10 +64,11 @@ def geo_dome_disp(request):
         post = request.POST
         dome = post.get("geoDome_list")
         Ord_list = CoOrdDome.objects.filter(geoDome = dome)
-        
+        triList = Triangle.objects.filter(geoDome = dome)
+
         if post.get('action') == 'ViewDetails':
             projList = create2dProj(Ord_list) 
-            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list, 'Proj_list': projList})  
+            return render(request, "dispDome.html",{'geoDome_list' : geoDome_list, 'Ord_list': Ord_list, 'Proj_list': projList, 'Tri_List': triList })  
                
     return render(request, "dispDome.html",{'geoDome_list' : geoDome_list})
 
@@ -70,7 +86,7 @@ def create2dProj(Ord_list):
             #need to convert 61.9 = 1.080359 to radian 
             coOrd = wagnerTransform(1.080359,2.03,spherCodord[1], spherCodord[2])
 
-            proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1])
+            proj = CoOrd2D( geoDome = geoDomekey, x = coOrd[0], y = coOrd[1], colour =  Ord_list[i].colour)
 
             projArr.append(proj)
     CoOrd2D.objects.bulk_create(projArr)    
