@@ -24,7 +24,6 @@ function wagnerTransform(boundParrallel, p, long, lat) {
     //The result is between -pi/2 and pi/2.
     let theta = Math.asin(m * Math.sin(lat));
     let wagnerX = ((k / Math.sqrt(m)) * ((long * Math.cos(theta)) / (Math.cos(theta / 2))));
-
     let wagnerY = (2 / (k * Math.sqrt(m))) * Math.sin(theta / 2);
 
     var wagnerCoOrd = [wagnerX, wagnerY];

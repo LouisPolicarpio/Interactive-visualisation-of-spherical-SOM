@@ -46,7 +46,7 @@ function rotationMatrix(theta, coord, pVect) {
 }
 
 
-async function rotation(dome_svg, proj_svg){
+async function rotation(dome_svg, proj_svg,  triangles){
 
 
     //init start vals 
@@ -98,36 +98,33 @@ async function rotation(dome_svg, proj_svg){
 
 
         //between 0 and 2pi
-        var theta = Math.min(Math.max(parseFloat(dist / 400), 0), 2 * Math.PI);
+        var theta = Math.min(Math.max(parseFloat(dist / 1000), 0), 2 * Math.PI);
 
         var newProj = [];
+        var newDome = [];
         //update all circles  in sphere 
         dome_svg.selectAll("circle").datum(function () {
             var currentCord = math.matrix([[this.getAttribute('cx')], [this.getAttribute('cy')], [this.getAttribute('cz')]]);
-
-
-            // console.log(theta);
-            // console.log(currentCord);
-            // console.log(unitV);
             var newCoords =  rotationMatrix(theta, currentCord, unitV);
-            // console.log(newCoords);
+  
             
             var x = math.subset(newCoords, math.index(0, 0));
             var y = math.subset(newCoords, math.index(1, 0));
             var z = math.subset(newCoords, math.index(2, 0));
-            
-                var tmp2 = this.getAttribute('cx') ** 2 + this.getAttribute('cy') ** 2 + this.getAttribute('cz') ** 2;
-                var temp = x ** 2 + y ** 2 + z ** 2;
 
-                this.setAttribute('cx', x);
-                this.setAttribute('cy', y);
-                this.setAttribute('cz', z);
 
-                var spherCodord = sphericalCordConvert(x, y, z);
-                // bounding parallel = 61.9 and an equator (convert 61.9 = 1.080359 to radian) / central meridian ratio p = 2.03  
-                var newProjCoOrd = wagnerTransform(1.080359, 2.03, spherCodord[1], spherCodord[2]);
+            this.setAttribute('cx', x);
+            this.setAttribute('cy', y);
+            this.setAttribute('cz', z);
 
-                newProj.push(newProjCoOrd);
+            var spherCodord = sphericalCordConvert(x, y, z);
+            // bounding parallel = 61.9 and an equator (convert 61.9 = 1.080359 to radian) / central meridian ratio p = 2.03  
+            var newProjCoOrd = wagnerTransform(1.080359, 2.03, spherCodord[1], spherCodord[2]);
+            // console.log(newProjCoOrd);
+            newProjCoOrd = newProjCoOrd.map(function (x) { return x * 100; });
+
+            newProj.push(newProjCoOrd );
+            newDome.push([x ,y ,z ]);
 
         });
 
@@ -135,20 +132,67 @@ async function rotation(dome_svg, proj_svg){
         var i = 0;
         proj_svg.selectAll("circle").datum(function () {
 
-            var newCoords = newProj[i];
-
+    
             var x = newProj[i][0];
             var y = newProj[i][1];
 
-
-            this.setAttribute('cx', x * 100);
-            this.setAttribute('cy', y * 100);
-
+            this.setAttribute('cx', x );
+            this.setAttribute('cy', y );
+            
             i++;
         });
 
 
+        for(let i = 0; i < triangles.length ; i ++){
+
+            visibleTriangles(newProj, triangles[i][0], triangles[i][1], triangles[i][2], "projTri" +i) ;
+            visibleTriangles(newDome, triangles[i][0], triangles[i][1], triangles[i][2], "domeTri" +i) ;
+        }
         startY = e.clientY;
         startX = e.clientX;
     };
+
+
 };
+
+function updateTriangles(x1, y1, x2, y2, visiblity, id ) {
+    d3.select("#"+id)
+        .attr("x1", x1)
+        .attr("y1", y1)
+        .attr("x2", x2)
+        .attr("y2", y2)
+        .attr("visibility", visiblity);
+}
+
+function visibleTriangles(ords, p1, p2, p3, id) {
+    var vector1 = math.subtract(math.matrix(ords[p1]), math.matrix(ords[p2]));
+    var vector2 = math.subtract(math.matrix(ords[p1]), math.matrix(ords[p3]));
+
+    if (ords[0].length == 3) {
+        var result = math.cross(vector1, vector2);
+        result = math.dot(result, [0, 0, 1]);
+        if (result > 0) {
+            updateTriangles(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "visible", id + "_0");
+            updateTriangles(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "visible", id + "_1");
+            updateTriangles(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "visible", id + "_2");
+        }else{
+            updateTriangles(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "hidden", id + "_0");
+            updateTriangles(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "hidden", id + "_1");
+            updateTriangles(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "hidden", id + "_2");
+        }
+
+    } else {
+        var result = math.det([vector1, vector2]);
+
+        if (result > 0) {
+            updateTriangles(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "visible", id + "_0");
+            updateTriangles(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "visible", id + "_1");
+            updateTriangles(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "visible", id + "_2");
+        }else{
+            updateTriangles(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "hidden", id + "_0");
+            updateTriangles(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "hidden", id + "_1");
+            updateTriangles(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "hidden", id + "_2");
+        }
+    }
+
+}

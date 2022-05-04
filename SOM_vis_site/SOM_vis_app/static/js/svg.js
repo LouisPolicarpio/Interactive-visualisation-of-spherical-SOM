@@ -35,22 +35,51 @@ function proj(x, y, z, col, svg) {
     }
 }
 
-function projLines(x1, y1, x2, y2, svg) {
+function projLines(x1, y1, x2, y2, visiblity , id, svg) {
     svg.append("line")
         .style("stroke", "black")
         .style("stroke-width", 1)
         .attr("x1", x1)
         .attr("y1", y1)
         .attr("x2", x2)
-        .attr("y2", y2);
+        .attr("y2", y2)
+        .attr("visibility", visiblity)
+        .attr("id", id);
 }
 
-function getTriangles(ords, triangle) {
-    vector1 = math.matrix(ords[triangle[1]]) - math.matrix(ords[triangle[0]]);
-    vector2 = math.matrix(ords[triangle[2]]) - math.matrix(ords[triangle[0]]);
-    result = np.cross(vector1, vector2);
-    if (result[2] > 0) {
-        draw = True
+
+
+function getTriangles(ords, p1, p2, p3, id, svg) {
+    
+    var vector1 = math.subtract(math.matrix(ords[p1]) , math.matrix(ords[p2]));
+    var vector2 = math.subtract(math.matrix(ords[p1]) , math.matrix(ords[p3]));
+    
+
+    if(ords[0].length == 3 ){
+        var result = math.cross(vector1, vector2);
+        result = math.dot(result,[0,0,1]);
+
+        if (result > 0) {
+            projLines(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "visible", id +"_0" ,svg);
+            projLines(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "visible", id + "_1", svg);
+            projLines(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "visible", id + "_2", svg);
+        }else{
+            projLines(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "hidden",  id + "_0", svg);
+            projLines(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "hidden",  id + "_1", svg);
+            projLines(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "hidden",  id + "_2", svg);
+        }
+    }else{
+        var result = math.det([vector1, vector2]);
+
+        if( result > 0){
+            projLines(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "visible", id + "_0", svg);
+            projLines(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "visible", id + "_1", svg);
+            projLines(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "visible", id + "_2", svg);
+        }else{
+            projLines(ords[p1][0], ords[p1][1], ords[p2][0], ords[p2][1], "hidden", id + "_0", svg);
+            projLines(ords[p2][0], ords[p2][1], ords[p3][0], ords[p3][1], "hidden", id + "_1", svg);
+            projLines(ords[p3][0], ords[p3][1], ords[p1][0], ords[p1][1], "hidden", id + "_2", svg);
+        }
     }
-    return
+
 }

@@ -31,33 +31,17 @@
     <script src='{% static "/js/svg.js" %}'></script>
     <script src='{% static "/js/transform.js" %}'></script>
     <script src='{% static "/js/rotation.js" %}'></script>
-<!-- -------------------- JS --------------------------- -->
+
     <script>
 
         var dome_vertices = [];
         var proj_vertices = [];
+        var triangles = [];
 
         var svg = create_svgs();
         var dome_svg = svg[0];
         var proj_svg = svg[1];
                 
-        rotation(dome_svg, proj_svg);
-
-
-        function getTriangles(ords, triangle) {
-            vector1 = math.matrix(ords[triangle[1]]) - math.matrix(ords[triangle[0]]);
-            vector2 = math.matrix(ords[triangle[2]]) - math.matrix(ords[triangle[0]]);
-            result = np.cross(vector1, vector2);
-            if (result[2] > 0) {
-                draw = True
-            }
-            return
-        }
-
-
-
-
-
 
     </script>
 
@@ -71,7 +55,7 @@
         var z = parseFloat("{{i.z}}" * 100);
         var colour = parseFloat("{{i.colour}}");
         proj(x, y, z, colour, dome_svg);     
-        dome_vertices.push([x, y]); 
+        dome_vertices.push([x, y,z]); 
     </script>
 
     {% endfor %}
@@ -90,18 +74,19 @@
     </script>
     {% endfor %}
 
-    <script>  var count = 0; </script>
 
+    <script> var count = 0; </script>
     {% for tri in Tri_List %}
+   
     <script>
-        let p1 = "{{tri.point1}}";
-        let p2 = "{{tri.point2}}";
-        let p3 = "{{tri.point3}}";
-        count ++;
+        getTriangles(proj_vertices, "{{tri.point1}}", "{{tri.point2}}", "{{tri.point3}}", "projTri"+count ,proj_svg); 
+        getTriangles(dome_vertices, "{{tri.point1}}", "{{tri.point2}}", "{{tri.point3}}", "domeTri"+count, dome_svg); 
+        triangles.push(["{{tri.point1}}", "{{tri.point2}}", "{{tri.point3}}"])
+        count++;
     </script>
     {% endfor %}
 
-    
+    <script>       rotation(dome_svg, proj_svg, triangles); </script>
 
 {% endblock %}
 
