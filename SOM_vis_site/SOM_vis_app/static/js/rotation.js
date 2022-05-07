@@ -46,7 +46,7 @@ function rotationMatrix(theta, coord, pVect) {
 }
 
 
-async function rotation(dome_svg, proj_svg,  triangles){
+function rotation(dome_svg, proj_svg,  triangles){
 
 
     //init start vals 
@@ -89,23 +89,16 @@ async function rotation(dome_svg, proj_svg,  triangles){
         var axis = math.matrix([0, 0, -1]);
         var posVect = (math.cross(vector, axis));
 
-        
-        if(dist === 0){
-            var unitV = math.matrix([0, 0, 0]);
-        }else{
-            var unitV = math.divide(posVect, dist);
-        }
-
 
         //between 0 and 2pi
-        var theta = Math.min(Math.max(parseFloat(dist / 1000), 0), 2 * Math.PI);
+        var theta = Math.min(Math.max(parseFloat(dist / 200), 0), 2 * Math.PI);
 
         var newProj = [];
         var newDome = [];
         //update all circles  in sphere 
         dome_svg.selectAll("circle").datum(function () {
             var currentCord = math.matrix([[this.getAttribute('cx')], [this.getAttribute('cy')], [this.getAttribute('cz')]]);
-            var newCoords =  rotationMatrix(theta, currentCord, unitV);
+            var newCoords = rotationMatrix(theta, currentCord, posVect);
   
             
             var x = math.subset(newCoords, math.index(0, 0));
