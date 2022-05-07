@@ -79,7 +79,7 @@ function rotation(dome_svg, proj_svg,  triangles){
         var dy = e.clientY - startY;
 
 
-        var vector = math.matrix([dx, -dy, 0]);
+        var vector = math.matrix([dx, dy, 0]);
 
 
         //vector len
