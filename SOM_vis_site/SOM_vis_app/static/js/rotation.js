@@ -75,7 +75,9 @@ function rotation(dome_svg, proj_svg,  triangles, zoom){
         if (startY == null) {
             return;
         }
-        // start = performance.now();
+
+        
+        start = performance.now();
         //distance vextor
         var dx = e.clientX - startX;
         var dy = e.clientY - startY;
@@ -123,7 +125,9 @@ function rotation(dome_svg, proj_svg,  triangles, zoom){
 
             newProj.push(newProjCoOrd );
             newDome.push([x ,y ,z]);
-            r.push(rad)
+            r.push(rad);
+            end = performance.now();
+            speed.push(end - start);
 
         });
 
