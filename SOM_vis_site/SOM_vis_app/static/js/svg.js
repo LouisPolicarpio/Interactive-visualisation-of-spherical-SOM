@@ -23,9 +23,10 @@ function proj(x, y, z, col, svg) {
             .attr("cy", y)
             .attr("cz", z)
             .attr("r", 2)
-            .attr("fill", col);
+            .attr("fill", col)
+            .attr("onclick", "this.setAttribute('r', 5)");
         dome_vertices.push[[x, y, z]];
-
+        
     } else {
         svg.append("circle")
             .attr("cx", x)
@@ -34,6 +35,7 @@ function proj(x, y, z, col, svg) {
         proj_vertices.push[[x, y]];
     }
 }
+
 
 function projLines(x1, y1, x2, y2, visiblity , id, svg) {
     svg.append("line")
