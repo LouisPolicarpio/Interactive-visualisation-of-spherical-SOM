@@ -1,12 +1,5 @@
 # Interactive-visualisation-of-spherical-SOM
 Undergraduate Thesis : Interactive visualisation of spherical self-organising map
+Presentation: https://youtu.be/gYRy7te1Rmk
 
 
-
-for self: 
-    venv
-    geoDome_env\Scripts\activate.bat    
-    deactivate
-
-    pip requierments file:
-    pip freeze > requirements.txt
